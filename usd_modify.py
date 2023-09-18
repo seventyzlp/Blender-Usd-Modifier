@@ -11,62 +11,7 @@ bl_info = {
     "author": "millozhang"
 }
 
-
-@dataclass
-class PrimMeshINFO():
-    sourceMeshPath = []
-    targetMeshPath = []
-    targetPrims = {}
-    sourcePrims = {}
-    sourceGeoms = []
-    targetStage = ''
-    sourceStage = ''
-    targetPath = ''
-
-    uclass = ''
-    uassestpath = ''
-    materialpath = ''
-
-    def reset_source(self):
-        self.sourceMeshPath = []
-        self.sourcePrims = {}
-        self.sourceStage = ''
-
-    def reset_target(self):
-        self.targetMeshPath = []
-        self.targetPrims = {}
-        self.targetStage = ''
-        self.targetPath = ''
-        self.uclass = ''
-        self.uassestpath = ''
-        self.materialpath = ''
-
-
-meshInfo = PrimMeshINFO()
-
-
-def load_usd_files(target_file_path, source_file_path):
-    target_stage = Usd.Stage.Open(target_file_path)
-    source_stage = Usd.Stage.Open(source_file_path)
-
-    # set target stage for save/export
-    meshInfo.targetStage = target_stage
-    meshInfo.sourceStage = source_stage
-
-    target_prim_dict = {}
-    source_prim_dict = {}
-
-    usdGenTookit.collect_prims(target_stage.GetPseudoRoot(), target_prim_dict)
-    usdGenTookit.collect_prims(source_stage.GetPseudoRoot(), source_prim_dict)
-
-    for prim_path, prim in target_prim_dict.items():
-        item = (str(prim_path), str(prim_path), str(prim))
-        meshInfo.targetMeshPath.append(item)
-
-    for prim_path, prim in source_prim_dict.items():
-        item = (str(prim_path), str(prim_path), str(prim))
-        meshInfo.sourceMeshPath.append(item)
-
+meshInfo = usdGenTookit.PrimMeshINFO()
 
 def update_target_enum_items(self, context):
     items = []
@@ -147,7 +92,6 @@ class GetSourceButton(bpy.types.Operator):
 
 
 class GetSourceMeshButton(bpy.types.Operator):
-    # bpy.ops.wm.usd_import(filepath="E:\\Blender_python\\hou_output.usd")
     bl_idname = "get_source_mesh_button.button"
     bl_label = "Show Source Mesh"
 
@@ -187,7 +131,6 @@ class GetSourceMeshButton(bpy.types.Operator):
         # set uv
         UsdGeom.Primvar(target_prim.GetAttribute('normals')).SetInterpolation('faceVarying')
 
-
     def execute(self, context):
 
         if len(meshInfo.sourceMeshPath) == 5:  # if stage has no mesh prim
@@ -212,6 +155,7 @@ class GetSourceMeshButton(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class GetUsdButton(bpy.types.Operator):
     bl_idname = "get_usd_button.button"
     bl_label = "Get USD Objects"
@@ -234,7 +178,7 @@ class GetUsdButton(bpy.types.Operator):
         input_target_file = meshInfo.targetPath
         input_source_file = "E:\\Blender_python\\blender_python_modify.usd"
 
-        load_usd_files(input_target_file, input_source_file)
+        usdGenTookit.load_usd_files(input_target_file, input_source_file, meshInfo)
         return {'FINISHED'}
 
 
@@ -343,9 +287,9 @@ class DoDeleteButton(bpy.types.Operator):
         for type, path, name in meshInfo.targetMeshPath:
             if target_prim_selected == path:
                 target_prim = meshInfo.targetStage.GetPrimAtPath(type)
-                
+
         usdGenTookit.remove_prim(target_prim, meshInfo)
-        
+
         meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
         print('remove prim')
 
@@ -375,22 +319,7 @@ class DoModifyGeomSubSetButton(bpy.types.Operator):
         for i in range(0, len(meshInfo.sourceGeoms)):
             geom_sub_material_selected = getattr(bpy.context.scene, f'geom_enum_{i}')
             geom_sub_mesh_selected = meshInfo.sourceGeoms[i]
-
-            # add geomsubset to target usd
-            parentprim_path = "".join(str(target_prim.GetPath())) + "/" + str(source_prim.GetPath()).split("/")[-1]
-            parentprim = meshInfo.targetStage.GetPrimAtPath(parentprim_path)
-            geomsubset_path = "".join(str(parentprim.GetPath())) + "/" + str(geom_sub_mesh_selected.GetPath()).split("/")[-1]
-            geomsubset = meshInfo.targetStage.DefinePrim(geomsubset_path, "GeomSubset")
-
-            # set material to subset
-            material = UsdShade.Material.Get(meshInfo.targetStage, Sdf.Path(geom_sub_material_selected))
-            mbindapi = UsdShade.MaterialBindingAPI(geomsubset)
-            mbindapi.Bind(material=material)
-
-            # set metadata
-            geomsubset.CreateAttribute("elementType", Sdf.ValueTypeNames.Token).Set(geom_sub_mesh_selected.GetAttribute('elementType').Get())
-            geomsubset.CreateAttribute("indices", Sdf.ValueTypeNames.UInt64Array).Set(geom_sub_mesh_selected.GetAttribute('indices').Get())
-            geomsubset.CreateAttribute("familyName", Sdf.ValueTypeNames.Token).Set(geom_sub_mesh_selected.GetAttribute('familyName').Get())
+            usdGenTookit.modify_subgeom_material(geom_sub_mesh_selected, geom_sub_material_selected, target_prim, source_prim, meshInfo)
 
         meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
 
@@ -429,7 +358,7 @@ class USDModifyPanel(bpy.types.Panel):
 
         row = layout.row()
         spilt = row.split(factor=0.5)
-        spilt.label(text="") # just for space
+        spilt.label(text="")  # just for space
         spilt.operator(GetSourceMeshButton.bl_idname, icon="OUTLINER_OB_MESH")
 
         row = layout.row()

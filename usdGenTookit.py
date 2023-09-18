@@ -2,15 +2,66 @@ from pxr import Usd, UsdGeom, Gf, Sdf, UsdShade
 import bpy
 import numpy as np
 import math
+from dataclasses import dataclass
 
+@dataclass
+class PrimMeshINFO():
+    sourceMeshPath = []
+    targetMeshPath = []
+    targetPrims = {}
+    sourcePrims = {}
+    sourceGeoms = []
+    targetStage = ''
+    sourceStage = ''
+    targetPath = ''
+
+    uclass = ''
+    uassestpath = ''
+    materialpath = ''
+
+    def reset_source(self):
+        self.sourceMeshPath = []
+        self.sourcePrims = {}
+        self.sourceStage = ''
+
+    def reset_target(self):
+        self.targetMeshPath = []
+        self.targetPrims = {}
+        self.targetStage = ''
+        self.targetPath = ''
+        self.uclass = ''
+        self.uassestpath = ''
+        self.materialpath = ''
+
+def load_usd_files(target_file_path, source_file_path, meshInfo:PrimMeshINFO):
+    target_stage = Usd.Stage.Open(target_file_path)
+    source_stage = Usd.Stage.Open(source_file_path)
+
+    # set target stage for save/export
+    meshInfo.targetStage = target_stage
+    meshInfo.sourceStage = source_stage
+
+    target_prim_dict = {}
+    source_prim_dict = {}
+
+    collect_prims(target_stage.GetPseudoRoot(), target_prim_dict)
+    collect_prims(source_stage.GetPseudoRoot(), source_prim_dict)
+
+    for prim_path, prim in target_prim_dict.items():
+        item = (str(prim_path), str(prim_path), str(prim))
+        meshInfo.targetMeshPath.append(item)
+
+    for prim_path, prim in source_prim_dict.items():
+        item = (str(prim_path), str(prim_path), str(prim))
+        meshInfo.sourceMeshPath.append(item)
 
 def modify_prim_configure(prim, packagepath, uclass):
     prim.SetCustomDataByKey("PackagePath", packagepath)
     prim.SetCustomDataByKey("UClass", uclass)
 
 
-def modify_subgeom_material(geom_sub_material_selected, geom_sub_mesh_selected, target_prim, source_prim, meshInfo):
-    
+def modify_subgeom_material(geom_sub_material_selected, geom_sub_mesh_selected, target_prim, source_prim, meshInfo: PrimMeshINFO):
+
     # add geomsubset to target usd
     parentprim_path = "".join(str(target_prim.GetPath())) + "/" + str(source_prim.GetPath()).split("/")[-1]
     parentprim = meshInfo.targetStage.GetPrimAtPath(parentprim_path)
@@ -26,7 +77,7 @@ def modify_subgeom_material(geom_sub_material_selected, geom_sub_mesh_selected, 
     geomsubset.CreateAttribute("elementType", Sdf.ValueTypeNames.Token).Set(geom_sub_mesh_selected.GetAttribute('elementType').Get())
     geomsubset.CreateAttribute("indices", Sdf.ValueTypeNames.UInt64Array).Set(geom_sub_mesh_selected.GetAttribute('indices').Get())
     geomsubset.CreateAttribute("familyName", Sdf.ValueTypeNames.Token).Set(geom_sub_mesh_selected.GetAttribute('familyName').Get())
-    
+
 
 def replace_prim_mesh(source_prim, target_prim):
 
@@ -67,7 +118,7 @@ def replace_prim_mesh(source_prim, target_prim):
     UsdGeom.Primvar(target_prim.GetAttribute('normals')).SetInterpolation('faceVarying')
 
 
-def append_prim(source_prim, parent_prim, meshInfo):
+def append_prim(source_prim, parent_prim, meshInfo: PrimMeshINFO):
 
     # create empty child prim
     childprimpath = "".join(str(parent_prim.GetPath())) + "/" + str(source_prim.GetPath()).split("/")[-1]
@@ -100,7 +151,7 @@ def append_prim(source_prim, parent_prim, meshInfo):
     childprim.CreateAttribute('subdivisionScheme', Sdf.ValueTypeNames.Token).Set('none')
 
 
-def delete_prim(prim, meshInfo):
+def delete_prim(prim, meshInfo: PrimMeshINFO):
     meshInfo.targetStage.RemovePrim(prim.GetPath())
 
 
