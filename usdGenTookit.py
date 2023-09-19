@@ -110,7 +110,6 @@ def replace_prim_mesh(source_prim, target_prim):
 
     xformapi = UsdGeom.XformCommonAPI(target_prim)
     xformapi.SetRotate(Gf.Vec3f(trans[1][0] - 90, trans[1][1], trans[1][2]))
-    print
     xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2]) * 0.01)
     xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2]) * 0.01)
 
@@ -118,7 +117,7 @@ def replace_prim_mesh(source_prim, target_prim):
     UsdGeom.Primvar(target_prim.GetAttribute('normals')).SetInterpolation('faceVarying')
 
 
-def append_prim(source_prim, parent_prim, meshInfo: PrimMeshINFO):
+def append_prim(source_prim, parent_prim, material_prim, meshInfo: PrimMeshINFO):
 
     # create empty child prim
     childprimpath = "".join(str(parent_prim.GetPath())) + "/" + str(source_prim.GetPath()).split("/")[-1]
@@ -128,16 +127,13 @@ def append_prim(source_prim, parent_prim, meshInfo: PrimMeshINFO):
     replace_prim_mesh(source_prim, childprim)
 
     # add custom data
-    meshInfo.uclass = bpy.context.scene.uclass
-    meshInfo.uassestpath = bpy.context.scene.uassetpath
     if meshInfo.uassestpath and meshInfo.uclass:
         modify_prim_configure(childprim, meshInfo.uassestpath, meshInfo.uclass)
 
     # set material bindings
-    target_prim_selected = bpy.context.scene.prim_material
     for type, path, name in meshInfo.targetMeshPath:
-        if target_prim_selected == path:
-            meshInfo.materialpath = target_prim_selected
+        if material_prim == path:
+            meshInfo.materialpath = material_prim
 
     if meshInfo.materialpath:
         material = UsdShade.Material.Get(meshInfo.targetStage, Sdf.Path(meshInfo.materialpath))

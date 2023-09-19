@@ -266,7 +266,11 @@ class DoAppendButton(bpy.types.Operator):
                 if target_prim_selected == path:
                     target_prim = meshInfo.targetStage.GetPrimAtPath(type)
 
-            usdGenTookit.append_prim(source_prim, target_prim, meshInfo)  # set prim
+            meshInfo.uclass = bpy.context.scene.uclass
+            meshInfo.uassestpath = bpy.context.scene.uassetpath
+            material_prim = bpy.context.scene.prim_material
+
+            usdGenTookit.append_prim(source_prim, target_prim, material_prim, meshInfo)  # set prim
 
             meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
 
@@ -304,6 +308,7 @@ class DoModifyGeomSubSetButton(bpy.types.Operator):
 
         source_prim_selected = bpy.context.scene.source_enum
         target_prim_selected = bpy.context.scene.target_enum
+        material_prim = bpy.context.scene.prim_material
 
         # add mesh parent to target usd
         for type, path, name in meshInfo.sourceMeshPath:
@@ -313,7 +318,7 @@ class DoModifyGeomSubSetButton(bpy.types.Operator):
             if target_prim_selected == path:
                 target_prim = meshInfo.targetStage.GetPrimAtPath(type)
 
-        usdGenTookit.append_prim(source_prim, target_prim, meshInfo)  # set prim
+        usdGenTookit.append_prim(source_prim, target_prim, material_prim, meshInfo)  # set prim
 
         # get select sub and material
         for i in range(0, len(meshInfo.sourceGeoms)):

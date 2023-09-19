@@ -1,8 +1,10 @@
-import bpy
+from pxr import Usd, UsdGeom, Gf, Sdf, UsdShade
 import usdGenTookit
 import sys
 import argparse
-
+'''
+use script argparse after -- to seperate with blender
+'''
 
 class ArgumentParserForBlender(argparse.ArgumentParser):
 
@@ -21,30 +23,31 @@ meshInfo = usdGenTookit.PrimMeshINFO()
 parser = ArgumentParserForBlender()
 # set usd file
 parser.add_argument("-TUSD", "--tfile", type=str, help="Target USD file", default="E:\\Blender_python\\hou_output.usd")
-parser.add_argument("-SUSD", "--sfile", type=str, help="Source USD file", default="E:\\Blender_python\\blender_output.usd")
+parser.add_argument("-SUSD", "--sfile", type=str, help="Source USD file", default="E:\\Blender_python\\blender_python_modify.usd")
 
 # set prim choice
 parser.add_argument("-TP", "--tprim", type=str, help="the target prim path")
 parser.add_argument("-SP", "--sprim", type=str, help="the source prim path")
+parser.add_argument("-MP", "--mprim", type=str, help="the material prim path")
 
 # add trick to find if choice a mode
-parser.add_argument("-M", "--modify", action='store_false', default='True', help="modify mode")
-parser.add_argument("-A", "--append", action='store_false', default='True', help="append mode")
-parser.add_argument("-SUB", "--subgeom", action='store_false', default='True', help="subgeom mode")
-parser.add_argument("-D", "--delete", action='store_false', default='True', help="delete mode")
+parser.add_argument("-M", "--modify",  action='store_true', default=False, help="modify mode")
+parser.add_argument("-A", "--append",  action='store_true', default=False, help="append mode")
+parser.add_argument("-SUB", "--subgeom", action='store_true', default=False, help="subgeom mode")
+parser.add_argument("-D", "--delete",  action='store_true', default=False, help="delete mode")
 
 # set metadata
 parser.add_argument("-UC", "--uclass", type=str, help="uclass, like StaticMesh")
 parser.add_argument("-UP", "--uassetpath", type=str, help="uassetpath, like /Game/MyMesh")
 parser.add_argument("-MB", "--matbind", type=str, help="material binding, set material path")
-parser.add_argument("-GM", "--geommesh", type=str, nargs='+', help="geom material path, can input a list")
+parser.add_argument("-GM", "--geommat", type=str, nargs='+', help="geom material path, can input a list")
 args = parser.parse_args()
 
 # check if the process mode choice
-if args.modify + args.append + args.subgeom + args.delete != 1:
-    exit("mode choice error")
+# if args.modify + args.append + args.subgeom + args.delete != 1:
+#     exit("mode choice error")
 
-# save parser to meshinfo
+# save common parser to meshinfo
 usdGenTookit.load_usd_files(args.tfile, args.sfile, meshInfo)
 for type, path, name in meshInfo.sourceMeshPath:
     if args.sprim == path:
@@ -57,10 +60,16 @@ for type, path, name in meshInfo.targetMeshPath:
 if args.modify:
     # modify mode
     usdGenTookit.replace_prim_mesh(source_prim, target_prim)
+    print('modify')
 
 elif args.append:
     # append mode
-    usdGenTookit.append_prim(source_prim, target_prim, meshInfo)  # set prim
+    meshInfo.uclass = args.uclass
+    meshInfo.uassestpath = args.uassetpath
+    material_prim = args.mprim
+
+    usdGenTookit.append_prim(source_prim, target_prim, material_prim, meshInfo)  # set prim
+    print('append')
 
 elif args.delete:
     # delete mode
@@ -68,12 +77,34 @@ elif args.delete:
 
 elif args.subgeom:
 
-    usdGenTookit.append_prim(source_prim, target_prim, meshInfo)  # set prim
+    meshInfo.uclass = args.uclass
+    meshInfo.uassestpath = args.uassetpath
+    material_prim = args.mprim
+
+    usdGenTookit.append_prim(source_prim, target_prim, material_prim, meshInfo)  # set prim
+    
+    for type, path, name in meshInfo.sourceMeshPath:
+        if source_prim == path:
+            source_prim = meshInfo.sourceStage.GetPrimAtPath(type)
+
+    if source_prim.IsA(UsdGeom.Subset):
+        meshInfo.sourceGeoms.append(source_prim)
+
+    else:  # if not list all child prims
+        for child_prim in source_prim.GetChildren():
+            if child_prim.IsA(UsdGeom.Subset):
+                meshInfo.sourceGeoms.append(child_prim)
+    
     # get select sub and material
     for i in range(0, len(meshInfo.sourceGeoms)):
-        geom_sub_material_selected = getattr(bpy.context.scene, f'geom_enum_{i}') # todo fix it 
+        geom_sub_material_selected = args.geommat[i]
+        
+                
+        print(geom_sub_material_selected)
         geom_sub_mesh_selected = meshInfo.sourceGeoms[i]
-        usdGenTookit.modify_subgeom_material(geom_sub_mesh_selected, geom_sub_material_selected, target_prim, source_prim, meshInfo)
+        
+        print(geom_sub_mesh_selected)
+        usdGenTookit.modify_subgeom_material( geom_sub_material_selected ,geom_sub_mesh_selected, target_prim, source_prim, meshInfo)
 
 meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
 print('process finished')
