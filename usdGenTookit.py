@@ -33,9 +33,14 @@ class PrimMeshINFO():
         self.uassestpath = ''
         self.materialpath = ''
 
-def load_usd_files(target_file_path, source_file_path, meshInfo:PrimMeshINFO):
+
+def load_usd_files(target_file_path, source_file_path, meshInfo: PrimMeshINFO):
     target_stage = Usd.Stage.Open(target_file_path)
     source_stage = Usd.Stage.Open(source_file_path)
+
+    # set upaxis and meterperunit
+    UsdGeom.SetStageUpAxis(source_stage, UsdGeom.GetStageUpAxis(target_stage))
+    UsdGeom.SetStageMetersPerUnit(source_stage, UsdGeom.GetStageMetersPerUnit(target_stage))
 
     # set target stage for save/export
     meshInfo.targetStage = target_stage
@@ -54,6 +59,7 @@ def load_usd_files(target_file_path, source_file_path, meshInfo:PrimMeshINFO):
     for prim_path, prim in source_prim_dict.items():
         item = (str(prim_path), str(prim_path), str(prim))
         meshInfo.sourceMeshPath.append(item)
+
 
 def modify_prim_configure(prim, packagepath, uclass):
     prim.SetCustomDataByKey("PackagePath", packagepath)
@@ -112,6 +118,43 @@ def replace_prim_mesh(source_prim, target_prim):
     xformapi.SetRotate(Gf.Vec3f(trans[1][0] - 90, trans[1][1], trans[1][2]))
     xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2]) * 0.01)
     xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2]) * 0.01)
+
+    # set uv
+    UsdGeom.Primvar(target_prim.GetAttribute('normals')).SetInterpolation('faceVarying')
+
+
+def replace_temp_prim_mesh(source_prim, target_prim):
+    points = UsdGeom.Mesh(source_prim).GetPointsAttr().Get()
+    faceVertexCounts = UsdGeom.Mesh(source_prim).GetFaceVertexCountsAttr().Get()
+    faceVertexIndices = UsdGeom.Mesh(source_prim).GetFaceVertexIndicesAttr().Get()
+
+    # match points
+    UsdGeom.Mesh(target_prim).CreatePointsAttr().Set(points)
+    UsdGeom.Mesh(target_prim).CreateFaceVertexCountsAttr().Set(faceVertexCounts)
+    UsdGeom.Mesh(target_prim).CreateFaceVertexIndicesAttr().Set(faceVertexIndices)
+    trans = get_world_transform_xform(source_prim)
+
+    # match normal
+    normals = source_prim.GetAttribute('normals').Get()
+    for i in range(len(normals)):
+        normals[i] = tuple(map(lambda x: -x, normals[i]))
+    target_prim.CreateAttribute('normals', Sdf.ValueTypeNames.Normal3fArray).Set(normals)
+
+    # match uv
+    uv = source_prim.GetAttribute('primvars:st').Get()
+    if uv:
+        target_prim.CreateAttribute('primvars:st', Sdf.ValueTypeNames.TexCoord2fArray).Set(uv)
+        UsdGeom.Primvar(target_prim.GetAttribute('primvars:st')).SetInterpolation('faceVarying')
+
+    # match transform
+    trans[0][2], trans[0][1] = trans[0][1], trans[0][2]
+    trans[1][2], trans[1][1] = trans[1][1], trans[1][2]
+    trans[2][2], trans[2][1] = trans[2][1], trans[2][2]
+
+    xformapi = UsdGeom.XformCommonAPI(target_prim)
+    xformapi.SetRotate(Gf.Vec3f(trans[1][0] + 90, trans[1][1], trans[1][2]))
+    xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2]))
+    xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2]))
 
     # set uv
     UsdGeom.Primvar(target_prim.GetAttribute('normals')).SetInterpolation('faceVarying')
