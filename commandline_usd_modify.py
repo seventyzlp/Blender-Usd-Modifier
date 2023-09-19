@@ -2,6 +2,7 @@ from pxr import Usd, UsdGeom, Gf, Sdf, UsdShade
 import usdGenTookit
 import sys
 import argparse
+import bpy
 '''
 use script argparse after -- to seperate with blender
 '''
@@ -71,7 +72,7 @@ for target_prim in target_prims:
 # export cache usd
 cachepath = "E:\\Blender_python\\BlenderPlugin\\bl-input.usd"
 meshInfo.sourceStage.Export(cachepath)
-
+bpy.ops.wm.usd_import(filepath="E:\\Blender_python\\BlenderPlugin\\bl-input.usd")
 # do modify with the mesh
 
 

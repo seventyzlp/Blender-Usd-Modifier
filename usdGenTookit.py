@@ -152,9 +152,9 @@ def replace_temp_prim_mesh(source_prim, target_prim):
     trans[2][2], trans[2][1] = trans[2][1], trans[2][2]
 
     xformapi = UsdGeom.XformCommonAPI(target_prim)
-    xformapi.SetRotate(Gf.Vec3f(trans[1][0] + 90, trans[1][1], trans[1][2]))
-    xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2]))
-    xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2]))
+    xformapi.SetRotate(Gf.Vec3f(trans[1][0], trans[1][1], trans[1][2]))
+    xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2])* 0.01)
+    xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2])* 0.01)
 
     # set uv
     UsdGeom.Primvar(target_prim.GetAttribute('normals')).SetInterpolation('faceVarying')
