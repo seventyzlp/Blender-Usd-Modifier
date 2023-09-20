@@ -30,6 +30,7 @@ parser.add_argument("-TUSD", "--tfile", type=str, help="Target USD file", defaul
 # set prim choice
 parser.add_argument("-TP", "--tprim", nargs='+',  type=str, help="the target prim path")
 parser.add_argument("-MP", "--mprim", nargs='+',  type=str, help="the material prim path")
+parser.add_argument("-PP", "--pprim", nargs='+',  type=str, help="the parent prim path for append")
 
 # add trick to find if choice a mode
 parser.add_argument("-M", "--modify", action='store_true', default=False, help="modify mode")
@@ -54,8 +55,7 @@ target_prims = []
 usdGenTookit.load_usd_files(args.tfile, usd_simple_filepath, meshInfo)
 for primpath in args.tprim:
     target_prims.append(meshInfo.targetStage.GetPrimAtPath(primpath))
-
-print(target_prims)
+    
 # generate cache
 for type, path, name in meshInfo.sourceMeshPath:
     if path == '/root':
@@ -73,8 +73,32 @@ for target_prim in target_prims:
 cachepath = "E:\\Blender_python\\BlenderPlugin\\bl-input.usd"
 meshInfo.sourceStage.Export(cachepath)
 bpy.ops.wm.usd_import(filepath="E:\\Blender_python\\BlenderPlugin\\bl-input.usd")
-# do modify with the mesh
 
+# do modify with the mesh
+import use_geometrynode
+
+obj = bpy.context.scene.objects.get('grid')
+modify = obj.modifiers.new(name="MY MDF", type='NODES')
+modify.node_group = use_geometrynode.geometry_nodes
+bpy.context.view_layer.objects.active = obj  # need to choice the target mesh
+print(bpy.ops.object.modifier_apply(modifier='MY MDF'))
+blender_modifiedpath = "E:\\Blender_python\\blender_python_modify.usd"
+bpy.ops.wm.usd_export(filepath=blender_modifiedpath)
+
+source_prims = []
+target_prims = []
+
+usdGenTookit.load_usd_files(args.tfile, blender_modifiedpath, meshInfo)
+for primpath in args.tprim:
+    target_prims.append(meshInfo.targetStage.GetPrimAtPath(primpath))
+    
+for target_prim in target_prims:
+    source_prims.append(meshInfo.sourceStage.GetPrimAtPath('/root/' + str(target_prim.GetPath()).split("/")[-1]+"/"+ str(target_prim.GetPath()).split("/")[-1]))
+    
+print('============source======================')
+print(source_prims)
+print('============target======================')
+print(target_prims)
 
 # start process
 if args.modify:
@@ -89,7 +113,7 @@ elif args.append:
     meshInfo.uassestpath = args.uassetpath
     material_prim = args.mprim
     for i in range(0, len(source_prims)):
-        usdGenTookit.append_prim(source_prims[i], target_prims[i], material_prim[i], meshInfo)  # set prim
+        usdGenTookit.append_prim(source_prims[i], meshInfo.targetStage.GetPrimAtPath(args.pprim[i]), material_prim[i], meshInfo)  # set prim
         print('append')
 
 elif args.delete:
@@ -104,7 +128,7 @@ elif args.subgeom:
     material_prim = args.mprim
 
     for i in range(0, len(source_prims)):
-        
+
         usdGenTookit.append_prim(source_prims[i], target_prims[i], material_prim[i], meshInfo)  # set prim
 
         for type, path, name in meshInfo.sourceMeshPath:
