@@ -3,6 +3,7 @@ import usdGenTookit
 import sys
 import argparse
 import bpy
+import os
 '''
 use script argparse after -- to seperate with blender
 '''
@@ -25,7 +26,7 @@ class ArgumentParserForBlender(argparse.ArgumentParser):
 meshInfo = usdGenTookit.PrimMeshINFO()
 parser = ArgumentParserForBlender()
 # set usd file
-parser.add_argument("-TUSD", "--tfile", type=str, help="Target USD file", default="hou_output.usd")
+parser.add_argument("-TUSD", "--tfile", type=str, help="Target USD file", default='')
 parser.add_argument("-SP","--sfilepath", type=str, help="usd file save path", default='')
 
 # set prim choice
@@ -50,9 +51,14 @@ if args.modify + args.append + args.subgeom + args.delete != 1:
     exit("mode choice error")
 
 # save common parser to meshinfo
-meshInfo.savePath = args.sfilepath.replace('\\','\\\\')
+meshInfo.savePath = args.sfilepath
+if args.sfilepath == '':
+    args.sfilepath = os.path.abspath(__file__)
+    meshInfo.savePath = args.sfilepath.rsplit('\\', 1)[0]
+
 usd_simple_filepath = meshInfo.savePath + "\\BlenderPlugin\\bl-simple.usd"
 target_prims = []
+
 usdGenTookit.load_usd_files(args.tfile, usd_simple_filepath, meshInfo)
 for primpath in args.tprim:
     target_prims.append(meshInfo.targetStage.GetPrimAtPath(primpath))
@@ -131,7 +137,7 @@ elif args.subgeom:
     for i in range(0, len(source_prims)):
 
         usdGenTookit.append_prim(source_prims[i], target_prims[i], material_prim[i], meshInfo)  # set prim
-
+        
         for type, path, name in meshInfo.sourceMeshPath:
             if source_prims[i] == path:
                 source_prims[i] = meshInfo.sourceStage.GetPrimAtPath(type)
