@@ -41,7 +41,6 @@ parser.add_argument("-D", "--delete", action='store_true', default=False, help="
 # set metadata
 parser.add_argument("-UC", "--uclass", type=str, help="uclass, like StaticMesh")
 parser.add_argument("-UP", "--uassetpath", type=str, help="uassetpath, like /Game/MyMesh")
-parser.add_argument("-MB", "--matbind", type=str, help="material binding, set material path")
 parser.add_argument("-GM", "--geommat", type=str, nargs='+', help="geom material path, can input a list")
 args = parser.parse_args()
 
