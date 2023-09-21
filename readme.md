@@ -7,17 +7,18 @@
 
 ### 使用方法
 1. 点Choice Target按钮选择想要修改的符合flow格式的usd文件
-2. (可选)在blender中创建一个新的mesh，来替换目标usd中的某个prim
-3. 点Get Usd Objects获取当前编辑窗口和目标usd的信息
-4. 在choose source mesh 和 choose target mesh 中选择修改后的新prim和usd中的旧prim
-5. (可选)点击Show Source Mesh，会把usd中的物体输入到blender窗体中，把目标usd中的东西拿到blender来编辑
+2. 点Choice Save Path 来选择输出文件和cache文件的保存位置
+3. (可选)在blender中创建一个新的mesh，来替换目标usd中的某个prim
+4. 点Get Usd Objects获取当前编辑窗口和目标usd的信息
+5. 在choose source mesh 和 choose target mesh 中选择修改后的新prim和usd中的旧prim
+6. (可选)点击Show Source Mesh，会把usd中的物体输入到blender窗体中，把目标usd中的东西拿到blender来编辑
    - 这么做之后，需要重新点Get Usd Object 刷新临时usd文件, 然后可以在Choose usd sourse菜单中看到刚刚编辑的东西
-6. 把修改后的东西导入到符合flow格式的usd文件中
+7. 把修改后的东西导入到符合flow格式的usd文件中
    -  点Do Modify: 把target prim 用 source prim 进行替换
    -  点Do delete: 把target prim 从 usd 里面删掉
    -  点Do Append: 以target prim 为父 添加子prim为 source prim，可以选择设置prim的元数据 uclass 和 uasset path
    -  点Do Modify GeomSubset Material: 如果source mesh 有 geomsubset, 那么需要点击get geom subset, 选中材质的绑定之后，可以同步geomsubset
-7. 获取输出的符合flow 格式的usd: bl-output.usd
+8. 获取输出的符合flow 格式的usd: bl-output.usd
 
 另外，如果在活动视图中选中了想要的source mesh，那么在点击Simplify Source Object可以对Choose source mesh下拉框中的
 选项进行筛选，把非选中对象相关的prim不显示(但是依然存在)
@@ -52,16 +53,17 @@
 参考执行命令：.\blender.exe -b --python E:\Blender_python\commandline_usd_modify.py -- -TP /Octpus/spikes/grid -MP /_UAssets/M_Box -FP /Octpus/spikes -A
 
 1. --tfile: 设置符合flow格式的usd文件路径
-2. --tprim: 设置目标prim在 usd中的路径，可以并列添加多个
-3. --mprim: 当Append prim时，绑定于prim上的材质prim的路径
-4. --pprim: 当Append prim时，新添加prim的父prim路径
-5. --modify: 替换prim
-6. --append: 添加新prim到父prim下
-7. --delete: 把prim删掉
-8. --subgeom: 替换geomsubset的内容
-9. --uclass: 当添加时，设置prim metadata中 uclass的值
-10. --uassetpath: 当添加时，设置prim metadata中 uassetpath的值
-11. --geommat: 设置geomsubset的材质
+2. --sfilepath: 设置usd文件保存路径，如果没有的话默认使用commandline_usd_modify.py 的位置
+3. --tprim: 设置目标prim在 usd中的路径，可以并列添加多个
+4. --mprim: 当Append prim时，绑定于prim上的材质prim的路径
+5. --pprim: 当Append prim时，新添加prim的父prim路径
+6. --modify: 替换prim
+7. --append: 添加新prim到父prim下
+8. --delete: 把prim删掉
+9. --subgeom: 替换geomsubset的内容
+10. --uclass: 当添加时，设置prim metadata中 uclass的值
+11. --uassetpath: 当添加时，设置prim metadata中 uassetpath的值
+12. --geommat: 设置geomsubset的材质
 
 ### 使用流程中的usd缓存文件
 
