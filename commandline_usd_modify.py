@@ -25,7 +25,7 @@ class ArgumentParserForBlender(argparse.ArgumentParser):
 meshInfo = usdGenTookit.PrimMeshINFO()
 parser = ArgumentParserForBlender()
 # set usd file
-parser.add_argument("-TUSD", "--tfile", type=str, help="Target USD file", default="E:\\Blender_python\\hou_output.usd")
+parser.add_argument("-TUSD", "--tfile", type=str, help="Target USD file", default="hou_output.usd")
 
 # set prim choice
 parser.add_argument("-TP", "--tprim", nargs='+',  type=str, help="the target prim path")
@@ -49,7 +49,7 @@ if args.modify + args.append + args.subgeom + args.delete != 1:
     exit("mode choice error")
 
 # save common parser to meshinfo
-usd_simple_filepath = "E:\\Blender_python\\BlenderPlugin\\bl-simple.usd"
+usd_simple_filepath = "BlenderPlugin\\bl-simple.usd"
 target_prims = []
 usdGenTookit.load_usd_files(args.tfile, usd_simple_filepath, meshInfo)
 for primpath in args.tprim:
@@ -69,9 +69,9 @@ for target_prim in target_prims:
     source_prims.append(childprim)
 
 # export cache usd
-cachepath = "E:\\Blender_python\\BlenderPlugin\\bl-input.usd"
+cachepath = "BlenderPlugin\\bl-input.usd"
 meshInfo.sourceStage.Export(cachepath)
-bpy.ops.wm.usd_import(filepath="E:\\Blender_python\\BlenderPlugin\\bl-input.usd")
+bpy.ops.wm.usd_import(filepath=cachepath)
 
 # do modify with the mesh
 import use_geometrynode
@@ -81,7 +81,7 @@ modify = obj.modifiers.new(name="MY MDF", type='NODES')
 modify.node_group = use_geometrynode.geometry_nodes
 bpy.context.view_layer.objects.active = obj  # need to choice the target mesh
 print(bpy.ops.object.modifier_apply(modifier='MY MDF'))
-blender_modifiedpath = "E:\\Blender_python\\blender_python_modify.usd"
+blender_modifiedpath = "blender_python_modify.usd"
 bpy.ops.wm.usd_export(filepath=blender_modifiedpath)
 
 source_prims = []
@@ -154,5 +154,5 @@ elif args.subgeom:
 
         print('geom')
 
-meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
+meshInfo.targetStage.Export("BlenderPlugin\\bl-output.usd")
 print('process finished')

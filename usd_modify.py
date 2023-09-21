@@ -13,7 +13,6 @@ bl_info = {
 
 meshInfo = usdGenTookit.PrimMeshINFO()
 
-
 def update_target_enum_items(self, context):
     items = []
     for item in meshInfo.targetMeshPath:
@@ -46,6 +45,11 @@ def register():
         default="",
         description="target file path",
     )
+    bpy.types.Scene.filesavepath = bpy.props.StringProperty(
+        name="file save path",
+        default='',
+        description="file save path",
+    )
     bpy.types.Scene.uclass = bpy.props.StringProperty(
         name="uclass",
         default="",
@@ -64,6 +68,7 @@ def unregister():
     del bpy.types.Scene.target_enum
     del bpy.types.Scene.source_enum
     del bpy.types.Scene.target_path
+    del bpy.types.Scene.filesavepath
     del bpy.types.Scene.uclass
     del bpy.types.Scene.uassetpath
     del bpy.types.Scene.geom_enum
@@ -115,8 +120,8 @@ class GetSourceMeshButton(bpy.types.Operator):
             usdGenTookit.replace_temp_prim_mesh(target_prim, childprim)
 
             # add the usd to stage
-            meshInfo.sourceStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-input.usd")
-            bpy.ops.wm.usd_import(filepath="E:\\Blender_python\\BlenderPlugin\\bl-input.usd")
+            meshInfo.sourceStage.Export(meshInfo.savePath + "BlenderPlugin\\bl-input.usd")
+            bpy.ops.wm.usd_import(filepath=meshInfo.savePath + "BlenderPlugin\\bl-input.usd")
 
         return {'FINISHED'}
 
@@ -126,7 +131,6 @@ class GetUsdButton(bpy.types.Operator):
     bl_label = "Get USD Objects"
 
     def execute(self, context):
-
         # reset to default
         meshInfo.reset_source()
         meshInfo.reset_target()
@@ -134,14 +138,14 @@ class GetUsdButton(bpy.types.Operator):
         bpy.context.scene.uassetpath = meshInfo.uassestpath
 
         # save current scene to usd
-        bpy.ops.wm.usd_export(filepath="E:\\Blender_python\\blender_python_modify.usd")
+        bpy.ops.wm.usd_export(filepath=meshInfo.savePath + "\\blender_python_modify.usd")
 
         meshInfo.targetPath = bpy.context.scene.target_path  # usd cached choice
 
         print(meshInfo.targetPath)
 
         input_target_file = meshInfo.targetPath
-        input_source_file = "E:\\Blender_python\\blender_python_modify.usd"
+        input_source_file = meshInfo.savePath + "\\blender_python_modify.usd"
 
         usdGenTookit.load_usd_files(input_target_file, input_source_file, meshInfo)
         return {'FINISHED'}
@@ -201,9 +205,8 @@ class DoModifyButton(bpy.types.Operator):
                     source_prim = meshInfo.sourceStage.GetPrimAtPath(type)
 
             usdGenTookit.replace_prim_mesh(source_prim, target_prim)
-
-            meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
-
+            meshInfo.targetStage.Export(meshInfo.savePath + "\\BlenderPlugin\\bl-output.usd")
+            print(meshInfo.savePath + "\\BlenderPlugin\\bl-output.usd")
             print("modify")
         else:
             print("Please choose source and target prim")
@@ -236,8 +239,7 @@ class DoAppendButton(bpy.types.Operator):
             material_prim = bpy.context.scene.prim_material
 
             usdGenTookit.append_prim(source_prim, target_prim, material_prim, meshInfo)  # set prim
-
-            meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
+            meshInfo.targetStage.Export(meshInfo.savePath + "\\BlenderPlugin\\bl-output.usd")
 
             print("append")
         else:
@@ -258,8 +260,7 @@ class DoDeleteButton(bpy.types.Operator):
                 target_prim = meshInfo.targetStage.GetPrimAtPath(type)
 
         usdGenTookit.remove_prim(target_prim, meshInfo)
-
-        meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
+        meshInfo.targetStage.Export(meshInfo.savePath + "\\BlenderPlugin\\bl-output.usd")
         print('remove prim')
 
         return {'FINISHED'}
@@ -270,7 +271,6 @@ class DoModifyGeomSubSetButton(bpy.types.Operator):
     bl_label = "Do Modify GeomSubset Material"
 
     def execute(self, context):
-
         source_prim_selected = bpy.context.scene.source_enum
         target_prim_selected = bpy.context.scene.target_enum
         material_prim = bpy.context.scene.prim_material
@@ -291,8 +291,7 @@ class DoModifyGeomSubSetButton(bpy.types.Operator):
             geom_sub_mesh_selected = meshInfo.sourceGeoms[i]
             usdGenTookit.modify_subgeom_material(geom_sub_material_selected, geom_sub_mesh_selected, target_prim, source_prim, meshInfo)
 
-        meshInfo.targetStage.Export("E:\\Blender_python\\BlenderPlugin\\bl-output.usd")
-
+        meshInfo.targetStage.Export(meshInfo.savePath + "\\BlenderPlugin\\bl-output.usd")
         return {'FINISHED'}
 
 
@@ -308,6 +307,18 @@ class ChoiceTargetButton(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
         return {'FINISHED'}
 
 
+class ChoiceSavePathButton(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
+    bl_idname = "choice_save_path_button.button"
+    bl_label = "Choice Save Path"
+
+    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        bpy.context.scene.filesavepath = self.filepath
+        meshInfo.savePath = self.filepath.replace("\\", "\\\\")
+        return{'FINISHED'}
+
+
 class USDModifyPanel(bpy.types.Panel):
     bl_label = "USD Modify"
     bl_idname = "_PT_USD_modify_panel"
@@ -320,6 +331,10 @@ class USDModifyPanel(bpy.types.Panel):
         row = layout.row()
         row.operator(ChoiceTargetButton.bl_idname, icon="FILE_FOLDER")
         row.prop(context.scene, "target_path", text="")
+
+        row = layout.row()
+        row.operator(ChoiceSavePathButton.bl_idname, icon="FILE_FOLDER")
+        row.prop(context.scene, "filesavepath", text="")
 
         row = layout.row()
         spilt = row.split(factor=0.5)
@@ -408,7 +423,7 @@ class USDModifyGeomSubset(bpy.types.Panel):
 
 _classes = [
     GetSourceButton, USDModifyPanel, GetUsdButton, DoModifyButton, ChoiceTargetButton, DoAppendButton, USDAppendPannel, USDModifyGeomSubset,
-    GetGeomSubset, DoModifyGeomSubSetButton, DoDeleteButton, GetSourceMeshButton
+    GetGeomSubset, DoModifyGeomSubSetButton, DoDeleteButton, GetSourceMeshButton,ChoiceSavePathButton
 ]
 
 if __name__ == "__main__":

@@ -14,7 +14,8 @@ class PrimMeshINFO():
     targetStage = ''
     sourceStage = ''
     targetPath = ''
-
+    savePath = ''
+    
     uclass = ''
     uassestpath = ''
     materialpath = ''
