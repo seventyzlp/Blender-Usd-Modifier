@@ -92,10 +92,18 @@ def replace_prim_mesh(source_prim, target_prim):
     faceVertexCounts = UsdGeom.Mesh(source_prim).GetFaceVertexCountsAttr().Get()
     faceVertexIndices = UsdGeom.Mesh(source_prim).GetFaceVertexIndicesAttr().Get()
 
+    new_faceVertexIndices = []
+    current_index = 0
+    for count in faceVertexCounts:
+        face_indices = faceVertexIndices[current_index:current_index + count]
+        reversed_face = face_indices[::-1]
+        new_faceVertexIndices.extend(reversed_face)
+        current_index += count
+
     # match points
     UsdGeom.Mesh(target_prim).CreatePointsAttr().Set(points)
     UsdGeom.Mesh(target_prim).CreateFaceVertexCountsAttr().Set(faceVertexCounts)
-    UsdGeom.Mesh(target_prim).CreateFaceVertexIndicesAttr().Set(faceVertexIndices)
+    UsdGeom.Mesh(target_prim).CreateFaceVertexIndicesAttr().Set(new_faceVertexIndices)
     trans = get_world_transform_xform(source_prim)
 
     # match normal
@@ -117,7 +125,8 @@ def replace_prim_mesh(source_prim, target_prim):
 
     xformapi = UsdGeom.XformCommonAPI(target_prim)
     xformapi.SetRotate(Gf.Vec3f(trans[1][0]- 90, trans[1][1], trans[1][2]))
-    xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2])* 0.01)
+    #xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2])* 0.01)
+    xformapi.SetScale(Gf.Vec3f(trans[2][2], trans[2][0], trans[2][1])* 0.01)
     xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2])* 0.01)
 
     # set uv
@@ -129,10 +138,18 @@ def replace_temp_prim_mesh(source_prim, target_prim):
     faceVertexCounts = UsdGeom.Mesh(source_prim).GetFaceVertexCountsAttr().Get()
     faceVertexIndices = UsdGeom.Mesh(source_prim).GetFaceVertexIndicesAttr().Get()
 
+    new_faceVertexIndices = []
+    current_index = 0
+    for count in faceVertexCounts:
+        face_indices = faceVertexIndices[current_index:current_index + count]
+        reversed_face = face_indices[::-1]
+        new_faceVertexIndices.extend(reversed_face)
+        current_index += count
+
     # match points
     UsdGeom.Mesh(target_prim).CreatePointsAttr().Set(points)
     UsdGeom.Mesh(target_prim).CreateFaceVertexCountsAttr().Set(faceVertexCounts)
-    UsdGeom.Mesh(target_prim).CreateFaceVertexIndicesAttr().Set(faceVertexIndices)
+    UsdGeom.Mesh(target_prim).CreateFaceVertexIndicesAttr().Set(new_faceVertexIndices)
     trans = get_world_transform_xform(source_prim)
 
     # match normal
@@ -154,7 +171,8 @@ def replace_temp_prim_mesh(source_prim, target_prim):
 
     xformapi = UsdGeom.XformCommonAPI(target_prim)
     xformapi.SetRotate(Gf.Vec3f(trans[1][0], trans[1][1], trans[1][2]))
-    xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2])* 0.01)
+    #xformapi.SetScale(Gf.Vec3f(trans[2][0], trans[2][1], trans[2][2])* 0.01)
+    xformapi.SetScale(Gf.Vec3f(trans[2][2], trans[2][0], trans[2][1])* 0.01)
     xformapi.SetTranslate(Gf.Vec3d(trans[0][0], trans[0][1], trans[0][2])* 0.01)
 
     # set uv
