@@ -259,7 +259,7 @@ class DoDeleteButton(bpy.types.Operator):
             if target_prim_selected == path:
                 target_prim = meshInfo.targetStage.GetPrimAtPath(type)
 
-        usdGenTookit.remove_prim(target_prim, meshInfo)
+        usdGenTookit.delete_prim(target_prim, meshInfo)
         meshInfo.targetStage.Export(meshInfo.savePath + "\\BlenderPlugin\\bl-output.usd")
         print('remove prim')
 
